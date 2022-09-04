@@ -1,4 +1,4 @@
-discord.py== 1.7.3
+discord.py==1.7.3
 pymongo==4.2.0
-dnspython=2.2.1
+dnspython==2.2.1
 async-timeout==3.0.1
