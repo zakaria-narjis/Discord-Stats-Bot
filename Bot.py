@@ -8,7 +8,6 @@ from time import process_time_ns
 import time
 
 #Connection to MangoDB:password defined in the variables environment
-password = os.environ['password']
 password = 'ironmaiden1997'
 CONNECTION_URL = "mongodb+srv://solos:"+password+"@botsolos.muidzcw.mongodb.net/test"
 cluster = MongoClient(CONNECTION_URL)
@@ -22,7 +21,6 @@ intents.presences = True
 client = ds.Client(intents=intents)
 
 #Discord bot Token
-Token = os.environ['TOKEN']
 Token = 'OTI5NDU3MTYzOTMwMzI5MTE5.G_Iqdh.8-gONX4ZO-fDGCv-PHvA_uNmoujWmPfaKp1lkc'
 
 #Formats timedelta object to dict form {hours:hh,minutes:mm,seconds:ss}
