@@ -1,6 +1,5 @@
 import discord as ds
 from discord.ext import tasks
-import os
 from pymongo import MongoClient
 from datetime import datetime
 from datetime import timedelta
@@ -8,7 +7,6 @@ from time import process_time_ns
 import time
 
 #Connection to MangoDB:password defined in the variables environment
-password = os.environ['password']
 password = 'ironmaiden1997'
 CONNECTION_URL = "mongodb+srv://solos:"+password+"@botsolos.muidzcw.mongodb.net/test"
 cluster = MongoClient(CONNECTION_URL)
@@ -22,7 +20,6 @@ intents.presences = True
 client = ds.Client(intents=intents)
 
 #Discord bot Token
-Token = os.environ['TOKEN']
 Token = 'OTI5NDU3MTYzOTMwMzI5MTE5.G_Iqdh.8-gONX4ZO-fDGCv-PHvA_uNmoujWmPfaKp1lkc'
 
 #Formats timedelta object to dict form {hours:hh,minutes:mm,seconds:ss}
@@ -257,7 +254,7 @@ async def on_voice_state_update(member,before,after):
 
 @client.event
 async def on_disconnect():
-    print('d')
+    print('Disconnected')
 
 @client.event
 async def on_message(message):
@@ -267,8 +264,6 @@ async def on_message(message):
         await message.channel.send('Hello!')
     b = message.author.activities
     c = message.author.voice
-    print(b)
-
 
 
 client.run(Token)
