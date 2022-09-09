@@ -114,7 +114,7 @@ async def on_ready():
             collection.insert_one(document_init(guild))
     gathering_data.start()
 
-@tasks.loop(seconds = 30) # repeats after every 10 seconds
+@tasks.loop(seconds = 15) # repeats after every 15 seconds
 async def gathering_data():
    print('[{time}]   Gathering_data...'.format(time=datetime.now()))
    for guild in client.guilds:
