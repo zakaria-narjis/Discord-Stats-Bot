@@ -1,5 +1,6 @@
 import discord as ds
 from discord.ext import tasks
+import os
 from pymongo import MongoClient
 from datetime import datetime
 from datetime import timedelta
@@ -82,7 +83,7 @@ def document_init(guild:ds.guild)->dict():
         'members_count': guild.member_count,
         'members': {str(member.id): {
             '_id': member.id,
-            'member': member.name,
+            'name': member.name,
             'discriminator': member.discriminator,
             'connection_record':{'records':{'hours': 0, 'minutes': 0, 'seconds': 0},'previous_check_time':None},
             'voice_com_record':{'records':{'hours': 0, 'minutes': 0, 'seconds': 0},'previous_check_time':None},
@@ -102,6 +103,7 @@ def document_init(guild:ds.guild)->dict():
             'previous_check_time': None
         } for channel in guild.voice_channels},
         'recording_flag': True,
+        'recording_start_time':datetime.now()
     }
     return document
 
@@ -114,7 +116,7 @@ async def on_ready():
             collection.insert_one(document_init(guild))
     gathering_data.start()
 
-@tasks.loop(seconds = 15) # repeats after every 15 seconds
+@tasks.loop(seconds = 30) # repeats after every 10 seconds
 async def gathering_data():
    print('[{time}]   Gathering_data...'.format(time=datetime.now()))
    for guild in client.guilds:
@@ -176,7 +178,7 @@ async def gathering_data():
                     collection.update_one(
                         {'_id': guild.id},
                         {'$set': {update: {'records': format_timedelta_calc(t0, dt), 'previous_check_time': datetime.utcnow()}}})
-                    
+
 
                     '''User's activities'''
 
@@ -207,7 +209,7 @@ async def gathering_data():
 @client.event
 async def on_member_update(before,after):
     if before.bot==False:
-        
+
         '''Checking Online/Offline status'''
         if after.status!=before.status:
             update = 'members.' + str(after.id) + '.connection_record'
@@ -255,6 +257,43 @@ async def on_voice_state_update(member,before,after):
 @client.event
 async def on_disconnect():
     print('DISCONNECTED...')
+
+@client.event
+async def on_member_join(member):
+    if member.bot==False:
+        update='members.' + str(member.id)
+        print(member.name+'joined')
+        collection.update_one(
+            {'_id': member.guild.id, },
+            {'$set':{update:{
+                '_id': member.id,
+                'name': member.name,
+                'discriminator': member.discriminator,
+                'connection_record':{'records':{'hours': 0, 'minutes': 0, 'seconds': 0},'previous_check_time':None},
+                'voice_com_record':{'records':{'hours': 0, 'minutes': 0, 'seconds': 0},'previous_check_time':None},
+                'activities': {
+                    'playing': {},
+                    'streaming': {},
+                    'listening': {},
+                    'watching': {},
+                }}}}
+        )
+
+@client.event
+async def on_user_update(before,after):
+    if after.bot == False:
+        if before.discriminator!=after.discriminator:
+            update='members.'+str(before.id)+'.discriminator'
+            collection.update_many(
+                {'members.'+str(before.id)+'._id': before.id},
+                {'$set': {update:after.discriminator}})
+        if before.name!=after.name:
+            update='members.'+str(before.id)+'.name'
+            c=collection.update_many(
+                {'members.'+str(before.id)+'._id': before.id},
+                {'$set': {update:after.name}})
+
+
 '''
 @client.event
 async def on_message(message):
@@ -267,5 +306,5 @@ async def on_message(message):
 
 
 
-
 client.run(Token)
+
