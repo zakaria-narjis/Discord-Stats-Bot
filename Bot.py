@@ -262,7 +262,6 @@ async def on_disconnect():
 async def on_member_join(member):
     if member.bot==False:
         update='members.' + str(member.id)
-        print(member.name+'joined')
         collection.update_one(
             {'_id': member.guild.id, },
             {'$set':{update:{
