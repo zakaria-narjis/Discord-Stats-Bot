@@ -1,6 +1,0 @@
-discord.py==1.7.3
-pymongo==4.2.0
-dnspython==2.2.1
-async-timeout==3.0.1
-pandas==1.1.2
-matplotlib==3.2.1
