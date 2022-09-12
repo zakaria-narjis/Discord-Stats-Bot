@@ -1,11 +1,14 @@
 import discord as ds
+import pandas as pd
 from discord.ext import tasks
-import os
+from discord.ext import commands
 from pymongo import MongoClient
 from datetime import datetime
 from datetime import timedelta
 from time import process_time_ns
 import time
+import matplotlib.pyplot as plt
+import re
 
 #Connection to MangoDB:password defined in the variables environment
 password = 'ironmaiden1997'
@@ -18,7 +21,7 @@ collection = database["Statistics"]
 intents = ds.Intents.all()
 intents.members = True
 intents.presences = True
-client = ds.Client(intents=intents)
+client = commands.Bot(command_prefix='$$',intents=intents)
 
 #Discord bot Token
 Token = 'OTI5NDU3MTYzOTMwMzI5MTE5.G_Iqdh.8-gONX4ZO-fDGCv-PHvA_uNmoujWmPfaKp1lkc'
@@ -42,6 +45,7 @@ def format_timedelta_calc(dt1:dict(),dt2:dict())->dict():
      t0 = timedelta(hours=dt1['hours'],minutes=dt1['minutes'],seconds=dt1['seconds'])
      t1 = timedelta(hours=dt2['hours'],minutes=dt2['minutes'],seconds=dt2['seconds'])
      return format_timedelta(t0+t1)
+
 '''
 insert_new_activity function:
 Checks member's new activity
@@ -55,7 +59,6 @@ Insert activity data in the appropriate type of activities in the form of:
      'records'            : Total time spent on the activity                                         
      'previous_check_time': Datetime when the bot last checked the user's activity
 '''
-
 def insert_new_activity(activity:ds.Activity,guild:ds.guild,update:str,member:ds.Member,doc:dict()):
     extracted_doc = doc['members'][str(member.id)]['activities'][activity.type.name]
     if activity.name not in extracted_doc:
@@ -74,6 +77,10 @@ def insert_new_activity(activity:ds.Activity,guild:ds.guild,update:str,member:ds
             collection.update_one(
                 {'_id': guild.id},
                 {'$set': {update + '.' + 'previous_check_time': datetime.utcnow()}})
+
+def time_dict_to_hour(dt=dict()):
+    return timedelta(hours=dt['hours'], minutes=dt['minutes'], seconds=dt['seconds']).total_seconds()/3600
+
 
 #Creates data document (JSON) for discord server/returns document dict
 def document_init(guild:ds.guild)->dict():
@@ -262,6 +269,7 @@ async def on_disconnect():
 async def on_member_join(member):
     if member.bot==False:
         update='members.' + str(member.id)
+        print(member.name+'joined')
         collection.update_one(
             {'_id': member.guild.id, },
             {'$set':{update:{
@@ -292,18 +300,51 @@ async def on_user_update(before,after):
                 {'members.'+str(before.id)+'._id': before.id},
                 {'$set': {update:after.name}})
 
+@client.command()
+async def stats(ctx,name_disc):
+    member=ctx.guild.get_member_named(name_disc)
+    doc = collection.find_one(
+        {'_id':ctx.guild.id},)
+    extracted_doc=doc['members'][str(member.id)]
+    message = member.name+' statistics :'
+    cr=extracted_doc['connection_record']['records']
+    message+='\nOnline_time: {hours}h, {minutes}m, {seconds}s'.format(hours=cr['hours'],minutes=cr['minutes'],seconds=cr['seconds'])
+    vr = extracted_doc['voice_com_record']['records']
+    message+='\nVoice_chat_time: {hours}h, {minutes}m, {seconds}s'.format(hours=vr['hours'],minutes=vr['minutes'],seconds=vr['seconds'])
+    ac=extracted_doc['activities']
+    for activity_type in ac:
+        if ac[activity_type]!= {}:
+            message+='\n' + activity_type+':'
+            for activity in ac[activity_type]:
+                rs=ac[activity_type][activity]['records']
+                message+='\n '+ 'Total time spent on '+ activity+':'+' {hours}h, {minutes}m, {seconds}s'.format(hours=rs['hours'],minutes=rs['minutes'],seconds=rs['seconds'])
+    await ctx.send(message)
 
-'''
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    if message.content == '$$ users':
-        await message.channel.send('Hello!')
-    b = message.author.activities
-    c = message.author.voice'''
-
-
-
+@client.command()
+async def top_online(ctx,num='10',tp='txt'):
+    if num.isnumeric():
+        num=int(num)
+        if  num<=10 and num>0:
+            doc = collection.find_one(
+                {'_id':ctx.guild.id},)
+            data={
+                    "".join(re.findall("[a-zA-Z]+", doc['members'][member_id]['name']))[:15]:time_dict_to_hour(doc['members'][member_id]['connection_record']['records']) for member_id in doc['members']
+                }
+            ser = pd.Series(data=data).nlargest(n=num)
+            if tp=='txt':
+                message=''
+                for key,value,i in zip(ser.keys(), ser.values,range(1,num+1)):
+                    message+='\nRANK {n}: {member} {time:.2f} hours'.format(n=i,member=key,time=value)
+                await ctx.send(message)
+            if tp=='graph':
+                fig, ax = plt.subplots(figsize=(15, 13), constrained_layout=True)
+                ax.bar(ser.keys(), ser.values)
+                ax.set_xlabel('Hours')
+                ax.set_ylabel('Members')
+                ax.set_title('TOP '+str(num)+' Online members')
+                fig.savefig('top_n_graph.png')
+                chart=ds.File('top_n_graph.png')
+                await ctx.send(file=chart)
+    else:
+        await ctx.send('WRONG ARGUMENTS.')
 client.run(Token)
-
