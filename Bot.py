@@ -347,4 +347,35 @@ async def top_online(ctx,num='10',tp='txt'):
                 await ctx.send(file=chart)
     else:
         await ctx.send('WRONG ARGUMENTS.')
+        
+@client.command()
+async def top_voice(ctx,num='10',tp='txt'):
+    if num.isnumeric():
+        num=int(num)
+        if  num<=10 and num>0:
+            doc = collection.find_one(
+                {'_id':ctx.guild.id},)
+            data={
+                    "".join(re.findall("[a-zA-Z]+", doc['members'][member_id]['name']))[:15]:time_dict_to_hour(doc['members'][member_id]['voice_com_record']['records']) for member_id in doc['members']
+                }
+            ser = pd.Series(data=data).nlargest(n=num)
+            if tp=='txt':
+                message=''
+                for key,value,i in zip(ser.keys(), ser.values,range(1,num+1)):
+                    message+='\nRANK {n}: {member} {time:.2f} hours'.format(n=i,member=key,time=value)
+                await ctx.send(message)
+            if tp=='graph':
+                fig, ax = plt.subplots(figsize=(15, 13), constrained_layout=True)
+                ax.bar(ser.keys(), ser.values)
+                ax.set_ylabel('Hours')
+                ax.set_xlabel('Members')
+                ax.set_title('TOP '+str(num)+' voice chat users')
+                fig.savefig('top_n_graph.png')
+                chart=ds.File('top_n_graph.png')
+                await ctx.send(file=chart)
+        else:
+            await ctx.send('THE NUMBER MUST BE BETWEEN 1 AND 10.')
+    else:
+        await ctx.send('WRONG ARGUMENTS.')
+
 client.run(Token)
