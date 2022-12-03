@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import re
 
 #Connection to MangoDB:password defined in the variables environment
-password = 'ironmaiden1997'
+password = ''
 CONNECTION_URL = "mongodb+srv://solos:"+password+"@botsolos.muidzcw.mongodb.net/test"
 cluster = MongoClient(CONNECTION_URL)
 database = cluster["Discord_statistics"]
@@ -24,7 +24,7 @@ intents.presences = True
 client = commands.Bot(command_prefix='$$',intents=intents)
 
 #Discord bot Token
-Token = 'OTI5NDU3MTYzOTMwMzI5MTE5.G_Iqdh.8-gONX4ZO-fDGCv-PHvA_uNmoujWmPfaKp1lkc'
+Token = ''
 
 #Formats timedelta object to dict form {hours:hh,minutes:mm,seconds:ss}
 def format_timedelta(td:timedelta)->dict():
